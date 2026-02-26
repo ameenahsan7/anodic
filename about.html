@@ -90,23 +90,25 @@
 
         /* Header */
         header {
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 1000;
+            left: 0;
+            right: 0;
             height: 52px;
             background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--gray-200);
+            z-index: 1000;
         }
 
-        header nav {
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            padding: 0 32px;
             max-width: 1120px;
             margin: 0 auto;
-            padding: 0 20px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
 
         .logo {
@@ -119,41 +121,45 @@
             font-size: 14px;
         }
 
-        .nav-links {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-            list-style: none;
+        .logo img {
+            display: block;
         }
 
-        .nav-links a {
-            text-decoration: none;
+        nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        nav a {
+            font-size: 14px;
             color: var(--gray-600);
-            font-size: 13px;
-            font-weight: 500;
+            text-decoration: none;
             transition: color 0.3s ease;
         }
 
-        .nav-links a:hover,
-        .nav-links a.active {
+        nav a:hover,
+        nav a.active {
             color: var(--blue);
         }
 
-        .nav-links .cta {
+        .cta-btn {
             background: var(--blue);
-            color: var(--white);
-            padding: 8px 16px;
-            border-radius: 20px;
+            color: var(--white) !important;
+            padding: 10px 20px;
+            border-radius: 980px;
+            font-size: 13px;
+            font-weight: 500;
             transition: background 0.3s ease;
         }
 
-        .nav-links .cta:hover {
+        .cta-btn:hover {
             background: var(--blue-hover);
         }
 
         .mobile-toggle {
             display: none; background: none; border: none; cursor: pointer;
-            width: 30px; height: 30px; position: relative; align-items: center; justify-content: center;
+            width: 30px; height: 30px; align-items: center; justify-content: center;
         }
         .mobile-toggle svg { width: 18px; height: 18px; color: var(--gray-800); }
 
@@ -641,25 +647,26 @@
         }
 
         @media (max-width: 768px) {
-            header nav {
-                padding: 0 15px;
+            .header-content {
+                padding: 0 16px;
             }
 
-            .nav-links { display: none; }
+            nav {
+                display: none;
+            }
+
             .mobile-toggle { display: flex; }
             header.menu-open {
-                height: 100vh; position: fixed; top: 0; left: 0; right: 0;
-                background: #fbfbfd; z-index: 10000;
+                height: 100vh; background: #fbfbfd;
+            }
+            header.menu-open .header-content {
+                flex-wrap: wrap; height: auto; align-content: flex-start;
             }
             header.menu-open nav {
-                flex-direction: column; align-items: flex-start; height: auto;
-            }
-            header.menu-open .nav-links {
                 display: flex; flex-direction: column; width: 100%;
-                padding: 12px 0; gap: 0; list-style: none;
+                padding: 12px 0; gap: 0;
             }
-            header.menu-open .nav-links li { padding: 16px 0; border-bottom: 1px solid var(--gray-200); width: 100%; }
-            header.menu-open .nav-links a { font-size: 17px; color: var(--gray-900); }
+            header.menu-open nav a { padding: 16px 0; border-bottom: 1px solid #e8e8ed; font-size: 17px; color: var(--gray-900); display: block; width: 100%; }
 
             .hero h1 {
                 font-size: 32px;
@@ -706,23 +713,23 @@
 <body>
     <!-- Header -->
     <header>
-        <nav>
+        <div class="header-content">
             <a href="/" class="logo">
                 <img src="anodiclogo.png" alt="Anodic logo" width="28" height="28">
                 Anodic Solutions
             </a>
-            <ul class="nav-links">
-                <li><a href="/about" class="active">About</a></li>
-                <li><a href="/#services">Services</a></li>
-                <li><a href="/it-managed-services">IT Managed</a></li>
-                <li><a href="/#projects">Projects</a></li>
-                <li><a href="/#faq">FAQ</a></li>
-                <li><a href="/#contact" class="cta">Get a Quote</a></li>
-            </ul>
+            <nav>
+                <a href="/about" class="active">About</a>
+                <a href="/#services">Services</a>
+                <a href="/it-managed-services">IT Managed</a>
+                <a href="/#projects">Projects</a>
+                <a href="/#faq">FAQ</a>
+                <a href="/#contact" class="cta-btn">Get a Quote</a>
+            </nav>
             <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-        </nav>
+        </div>
     </header>
 
     <!-- Hero Section -->
@@ -1019,7 +1026,7 @@
 
         // Highlight active nav link
         const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.nav-links a');
+        const navLinks = document.querySelectorAll('nav a');
         navLinks.forEach(link => {
             if (link.getAttribute('href') === currentPath) {
                 link.classList.add('active');
