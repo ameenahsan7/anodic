@@ -642,13 +642,17 @@
             }
 
             .mobile-toggle { display: flex; }
-            nav.open {
-                display: flex; flex-direction: column; position: fixed;
-                top: 52px; left: 0; right: 0; bottom: 0;
-                background: #fbfbfd; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-                padding: 24px; gap: 0; z-index: 9998;
+            header.menu-open {
+                height: 100vh; background: #fbfbfd;
             }
-            nav.open a { padding: 16px 0; border-bottom: 1px solid #e8e8ed; font-size: 17px; color: var(--gray-900); }
+            header.menu-open .header-container {
+                flex-wrap: wrap; height: auto; align-content: flex-start;
+            }
+            header.menu-open nav {
+                display: flex; flex-direction: column; width: 100%;
+                padding: 12px 0; gap: 0;
+            }
+            header.menu-open nav a { padding: 16px 0; border-bottom: 1px solid #e8e8ed; font-size: 17px; color: var(--gray-900); display: block; width: 100%; }
 
             h1 {
                 font-size: 32px;
@@ -1061,8 +1065,8 @@
 
         // Mobile menu toggle
         var toggle = document.getElementById('mobileToggle');
-        var navMenu = document.querySelector('nav');
-        toggle.addEventListener('click', function() { navMenu.classList.toggle('open'); });
+        var headerEl = document.querySelector('header');
+        toggle.addEventListener('click', function() { headerEl.classList.toggle('menu-open'); });
     </script>
 </body>
 </html>
