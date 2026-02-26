@@ -647,14 +647,19 @@
 
             .nav-links { display: none; }
             .mobile-toggle { display: flex; }
-            .nav-links.open {
-                display: flex; flex-direction: column; position: fixed;
-                top: 52px; left: 0; right: 0; bottom: 0;
-                background: #fbfbfd; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-                padding: 24px; gap: 0; z-index: 9998; list-style: none;
+            header.menu-open {
+                height: 100vh; position: fixed; top: 0; left: 0; right: 0;
+                background: #fbfbfd; z-index: 10000;
             }
-            .nav-links.open li { padding: 16px 0; border-bottom: 1px solid var(--gray-200); }
-            .nav-links.open a { font-size: 17px; color: var(--gray-900); }
+            header.menu-open nav {
+                flex-direction: column; align-items: flex-start; height: auto;
+            }
+            header.menu-open .nav-links {
+                display: flex; flex-direction: column; width: 100%;
+                padding: 12px 0; gap: 0; list-style: none;
+            }
+            header.menu-open .nav-links li { padding: 16px 0; border-bottom: 1px solid var(--gray-200); width: 100%; }
+            header.menu-open .nav-links a { font-size: 17px; color: var(--gray-900); }
 
             .hero h1 {
                 font-size: 32px;
@@ -964,8 +969,8 @@
     <!-- Mobile Menu Toggle -->
     <script>
         var toggle = document.getElementById('mobileToggle');
-        var navMenu = document.querySelector('.nav-links');
-        toggle.addEventListener('click', function() { navMenu.classList.toggle('open'); });
+        var headerEl = document.querySelector('header');
+        toggle.addEventListener('click', function() { headerEl.classList.toggle('menu-open'); });
     </script>
 
     <!-- Contact Form Submission -->
