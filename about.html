@@ -456,18 +456,18 @@
         }
 
         /* Contact Section */
-        .contact-section {
+        .section {
             padding: 80px 20px;
+        }
+
+        .section-alt {
             background: var(--gray-50);
         }
 
-        .contact-section .contact-grid {
+        .container-wide {
             max-width: 1120px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            margin-top: 60px;
+            padding: 0 20px;
         }
 
         .section-eyebrow {
@@ -494,10 +494,21 @@
             margin-bottom: 40px;
         }
 
+        .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; margin-top: 60px; }
         .contact-block { margin-bottom: 28px; }
         .contact-block h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 4px; }
         .contact-block p, .contact-block a { font-size: 17px; color: var(--gray-900); text-decoration: none; display: block; }
         .contact-block a:hover { color: var(--blue); }
+        .contact-form { display: flex; flex-direction: column; gap: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-field { display: flex; flex-direction: column; }
+        .form-field label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 6px; }
+        .form-field input, .form-field textarea, .form-field select { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 12px; padding: 12px 16px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 17px; color: var(--gray-900); transition: all 0.2s; outline: none; letter-spacing: -0.022em; }
+        .form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color: var(--blue); background: var(--white); box-shadow: 0 0 0 4px rgba(21,154,156,0.15); }
+        .form-field textarea { min-height: 120px; resize: vertical; }
+        .form-field select { -webkit-appearance: none; appearance: none; }
+        .btn-blue { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--blue); color: var(--white); padding: 14px 28px; border-radius: 980px; font-size: 17px; font-weight: 600; text-decoration: none; transition: all 0.3s; border: none; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 100%; }
+        .btn-blue:hover { background: var(--blue-hover); }
 
         /* Footer */
         footer {
@@ -661,6 +672,19 @@
 
             .stat-item h3 {
                 font-size: 32px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .section-headline {
+                font-size: 28px;
             }
         }
     </style>
