@@ -216,7 +216,16 @@ addEventListener('keydown',e=>{
   initA();KD[e.code]=true;
   if(e.code==='Space'){e.preventDefault();toggleSiren();}
 });
-addEventListener('keyup',e=>{KD[e.code]=false;});
+addEventListener('keyup',e=>{
+  KD[e.code]=false;
+  // Reset joystick values when keys released
+  let kx=0,ky=0;
+  if(KD['ArrowLeft']||KD['KeyA'])kx=-1;
+  if(KD['ArrowRight']||KD['KeyD'])kx=1;
+  if(KD['ArrowUp']||KD['KeyW'])ky=-1;
+  if(KD['ArrowDown']||KD['KeyS'])ky=1;
+  if(!joyActive){IN.joyX=kx;IN.joyY=ky;}
+});
 
 function readKeyboard(){
   let kx=0,ky=0;
@@ -224,9 +233,7 @@ function readKeyboard(){
   if(KD['ArrowRight']||KD['KeyD'])kx=1;
   if(KD['ArrowUp']||KD['KeyW'])ky=-1;
   if(KD['ArrowDown']||KD['KeyS'])ky=1;
-  // Keyboard overrides joystick
-  if(kx!==0||ky!==0){IN.joyX=kx;IN.joyY=ky;return true;}
-  return false;
+  if(kx!==0||ky!==0){IN.joyX=kx;IN.joyY=ky;}
 }
 
 // === SINGLE TOUCH JOYSTICK ===
@@ -311,7 +318,7 @@ function update(){
   if(!started)return;
 
   // Read keyboard (overrides joystick if active)
-  const kb=readKeyboard();
+  readKeyboard();
 
   // Gas/Brake from joystick Y axis
   // joyY < 0 = push up = GAS, joyY > 0 = push down = REVERSE
@@ -326,16 +333,13 @@ function update(){
 
   // Steer from joystick X axis
   if(Math.abs(P.spd)>0.08){
-    const ts=0.045*Math.min(1,Math.abs(P.spd)/1.8);
+    const ts=0.05*Math.min(1,Math.abs(P.spd)/1.5);
     const dir=P.spd>=0?1:-1;
-    P.a+=IN.steerX*ts*dir;
-    // For joystick, use IN.joyX directly
     P.a+=IN.joyX*ts*dir;
   }
 
-  // After reading keyboard, reset if no keyboard
-  if(!kb){/* joystick handles it */}
-  else{IN.joyX=0;IN.joyY=0;} // keyboard already set values
+  // After reading keyboard
+  // (keyboard sets IN.joyX/joyY via readKeyboard, joystick sets them via touch — both use same vars)
 
   // Move
   const sa=Math.sin(P.a),ca=Math.cos(P.a);
