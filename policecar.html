@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🚔 Police Patrol!</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#111;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:'Segoe UI',system-ui,sans-serif}
+  canvas#game{display:block;width:100%;height:100%}
+  #hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:center;gap:10px;padding:8px 10px;z-index:10;pointer-events:none;flex-wrap:wrap}
+  .hb{background:rgba(0,0,0,0.65);border-radius:12px;padding:5px 12px;color:#fff;font-weight:700;font-size:0.85rem;border:1px solid rgba(255,255,255,0.08);white-space:nowrap;backdrop-filter:blur(4px)}
+  .hb .n{color:#FFD700;font-size:1.1rem}
+  #joy-zone{position:fixed;bottom:0;left:0;width:50%;height:45%;z-index:15}
+  #joy-ring{position:absolute;width:120px;height:120px;border:3px solid rgba(255,255,255,0.2);border-radius:50%;display:none;pointer-events:none}
+  #joy-knob{position:absolute;width:50px;height:50px;background:rgba(59,130,246,0.5);border:3px solid rgba(255,255,255,0.4);border-radius:50%;display:none;pointer-events:none}
+  #btns{position:fixed;bottom:20px;right:16px;z-index:15;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .abtn{width:68px;height:68px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.45);color:#fff;font-size:1.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);-webkit-tap-highlight-color:transparent;transition:transform 0.1s}
+  .abtn:active{transform:scale(0.9)}
+  .abtn.gas{background:rgba(34,197,94,0.45);border-color:rgba(34,197,94,0.6);width:76px;height:76px;font-size:1.7rem}
+  .abtn.brake{background:rgba(239,68,68,0.35);border-color:rgba(239,68,68,0.5);width:60px;height:60px}
+  .abtn.siren{background:rgba(59,130,246,0.4);border-color:rgba(59,130,246,0.6)}
+  .siren-ov{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:0}
+  #mini{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);border:2px solid rgba(255,255,255,0.12);border-radius:6px;z-index:10;pointer-events:none}
+  .catch-pop{position:fixed;z-index:20;pointer-events:none;font-weight:800;font-size:1.8rem;color:#FFD700;text-shadow:0 2px 8px rgba(0,0,0,0.5);animation:popUp 1.2s ease-out forwards}
+  @keyframes popUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-90px) scale(1.6)}}
+  #start{position:fixed;inset:0;background:linear-gradient(135deg,#0a1628,#1a1a2e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity 0.4s;padding:20px}
+  #start .icon{font-size:5rem;margin-bottom:10px;animation:bob 1.5s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+  #start h1{font-size:2.4rem;color:#fff;margin-bottom:4px;text-align:center}
+  #start .sub{color:rgba(255,255,255,0.4);margin-bottom:24px;text-align:center}
+  #start button{padding:16px 48px;border-radius:50px;border:none;background:linear-gradient(135deg,#3B82F6,#1D4ED8);color:#fff;font-size:1.4rem;font-weight:700;cursor:pointer;box-shadow:0 6px 25px rgba(59,130,246,0.4)}
+  #start button:active{transform:scale(0.95)}
+  #start .hint{color:rgba(255,255,255,0.2);font-size:0.8rem;margin-top:16px;text-align:center;line-height:1.6}
+  @media(hover:hover) and (pointer:fine){#joy-zone,#btns{display:none!important}#mini{left:8px;bottom:8px;transform:none}}
+  @media(hover:none){#mini{width:90px!important;height:90px!important}}
+</style>
+</head>
+<body>
+
+<div id="start">
+  <div class="icon">🚔</div>
+  <h1>POLICE PATROL!</h1>
+  <p class="sub">Chase the bad guys around the city!</p>
+  <button id="go">LET'S GO! 🚨</button>
+  <div class="hint">🕹️ Touch: Left=steer, Right=gas/brake<br>⌨️ Arrow keys + SPACE for siren</div>
+</div>
+
+<canvas id="game"></canvas>
+<div class="siren-ov" id="sov"></div>
+
+<div id="hud">
+  <div class="hb">🚔 <span class="n" id="h-spd">0</span> mph</div>
+  <div class="hb">⭐ <span class="n" id="h-score">0</span></div>
+  <div class="hb">🏆 <span class="n" id="h-caught">0</span> caught</div>
+</div>
+
+<canvas id="mini" width="110" height="110"></canvas>
+
+<div id="joy-zone">
+  <div id="joy-ring"></div>
+  <div id="joy-knob"></div>
+</div>
+
+<div id="btns">
+  <div class="abtn siren" id="btn-siren">🚨</div>
+  <div class="abtn gas" id="btn-gas">🟢</div>
+  <div class="abtn brake" id="btn-brake">🔴</div>
+</div>
+
+<script>
+const C=document.getElementById('game');
+const X=C.getContext('2d');
+const MC=document.getElementById('mini');
+const MX=MC.getContext('2d');
+let W,H;
+function resize(){W=C.width=innerWidth;H=C.height=innerHeight;if(!matchMedia('(hover:hover)').matches){MC.width=90;MC.height=90;}}
+resize();addEventListener('resize',resize);
+
+// === AUDIO ===
+let ac;
+function initA(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();}
+function tone(f,d,t='sine',v=0.07){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}
+let sirenOn=false,sirenI=null,sirenPh=0;
+function toggleSiren(){sirenOn=!sirenOn;if(sirenOn){sirenI=setInterval(()=>{sirenPh^=1;tone(sirenPh?760:600,0.17,'sine',0.09);},170);}else{clearInterval(sirenI);sirenI=null;}}
+function sfxCatch(){[520,660,780,1040].forEach((f,i)=>setTimeout(()=>tone(f,0.12,'sine',0.1),i*55));}
+function sfxPick(){tone(880,0.1);setTimeout(()=>tone(1100,0.1),60);}
+function sfxBump(){tone(80,0.1,'sawtooth',0.04);}
+
+// === CITY ===
+// KEY CHANGES: bigger tiles, wider roads, smaller building blocks
+const T=48;
+const CS=60;
+const BLK=7;    // smaller blocks = more roads
+const RW=5;     // 5-tile wide roads = VERY roomy
+
+const grid=[];
+const bCol={};
+
+function genCity(){
+  const colors=['#4A5568','#5B6ABF','#7C5CBF','#BF5C5C','#5C9FBF','#6B7280','#8B5E3C','#5C8A5C','#3D5A80','#C0A060','#7B4F4F','#556B6E'];
+  for(let r=0;r<CS;r++){
+    grid[r]=[];
+    for(let c=0;c<CS;c++){
+      const mr=r%BLK, mc=c%BLK;
+      if(mr<RW||mc<RW){
+        grid[r][c]=1; // road
+      } else {
+        grid[r][c]=2; // building (only 2x2 max!)
+        const bk=`${Math.floor(r/BLK)}_${Math.floor(c/BLK)}`;
+        if(!bCol[bk]) bCol[bk]=colors[Math.floor(Math.random()*colors.length)];
+      }
+    }
+  }
+  // Parks replacing some buildings
+  for(let p=0;p<6;p++){
+    const br=1+p*Math.floor(CS/BLK/6);
+    const bc=2+p;
+    const pr=br*BLK+RW, pc=bc*BLK+RW;
+    for(let r=pr;r<pr+2&&r<CS;r++)
+      for(let c=pc;c<pc+2&&c<CS;c++)
+        if(r<CS&&c<CS) grid[r][c]=4;
+  }
+}
+genCity();
+
+// Building collision check - with a margin (shrink building hitbox)
+const BMARGIN = T * 0.15; // buildings are slightly smaller for collision
+function isSolid(x,y){
+  const c=Math.floor(x/T),r=Math.floor(y/T);
+  if(r<0||r>=CS||c<0||c>=CS) return true;
+  if(grid[r][c]!==2) return false;
+  // Check if we're within the shrunken hitbox
+  const lx=x-c*T, ly=y-r*T;
+  return lx>BMARGIN && lx<T-BMARGIN && ly>BMARGIN && ly<T-BMARGIN;
+}
+
+function tAt(x,y){
+  const c=Math.floor(x/T),r=Math.floor(y/T);
+  if(r<0||r>=CS||c<0||c>=CS)return 2;
+  return grid[r][c];
+}
+
+function findRoad(){
+  for(let i=0;i<300;i++){
+    const r=Math.floor(Math.random()*CS),c=Math.floor(Math.random()*CS);
+    if(grid[r][c]===1) return {x:c*T+T/2,y:r*T+T/2};
+  }
+  return {x:RW*T+T/2,y:RW*T+T/2};
+}
+
+// === PLAYER ===
+const sp=findRoad();
+const P={x:sp.x,y:sp.y,a:0,spd:0,maxS:4.2,w:T*1.0,h:T*1.7,st:0};
+
+// === INPUT ===
+const IN={gas:false,brake:false,steerX:0,steerY:0};
+
+addEventListener('keydown',e=>{
+  initA();
+  if(e.code==='ArrowUp'||e.code==='KeyW')IN.gas=true;
+  if(e.code==='ArrowDown'||e.code==='KeyS')IN.brake=true;
+  if(e.code==='ArrowLeft'||e.code==='KeyA')IN.steerX=-1;
+  if(e.code==='ArrowRight'||e.code==='KeyD')IN.steerX=1;
+  if(e.code==='Space'){e.preventDefault();toggleSiren();}
+});
+addEventListener('keyup',e=>{
+  if(e.code==='ArrowUp'||e.code==='KeyW')IN.gas=false;
+  if(e.code==='ArrowDown'||e.code==='KeyS')IN.brake=false;
+  if(e.code==='ArrowLeft'||e.code==='KeyA'){if(IN.steerX<0)IN.steerX=0;}
+  if(e.code==='ArrowRight'||e.code==='KeyD'){if(IN.steerX>0)IN.steerX=0;}
+});
+
+// Touch joystick
+const joyZone=document.getElementById('joy-zone');
+const joyRing=document.getElementById('joy-ring');
+const joyKnob=document.getElementById('joy-knob');
+let joyActive=false,joyOX=0,joyOY=0,joyId=-1;
+
+joyZone.addEventListener('touchstart',e=>{
+  e.preventDefault();initA();
+  const t=e.changedTouches[0];
+  joyActive=true;joyId=t.identifier;joyOX=t.clientX;joyOY=t.clientY;
+  joyRing.style.display='block';joyRing.style.left=(joyOX-60)+'px';joyRing.style.top=(joyOY-60)+'px';
+  joyKnob.style.display='block';joyKnob.style.left=(joyOX-25)+'px';joyKnob.style.top=(joyOY-25)+'px';
+},{passive:false});
+
+joyZone.addEventListener('touchmove',e=>{
+  e.preventDefault();if(!joyActive)return;
+  for(const t of e.changedTouches){
+    if(t.identifier!==joyId)continue;
+    let dx=t.clientX-joyOX,dy=t.clientY-joyOY;
+    const dist=Math.sqrt(dx*dx+dy*dy),maxR=55;
+    if(dist>maxR){dx=dx/dist*maxR;dy=dy/dist*maxR;}
+    joyKnob.style.left=(joyOX+dx-25)+'px';joyKnob.style.top=(joyOY+dy-25)+'px';
+    IN.steerX=dx/maxR;IN.steerY=dy/maxR;
+  }
+},{passive:false});
+
+function endJoy(){joyActive=false;joyId=-1;IN.steerX=0;IN.steerY=0;joyRing.style.display='none';joyKnob.style.display='none';}
+joyZone.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===joyId)endJoy();},{passive:false});
+joyZone.addEventListener('touchcancel',endJoy,{passive:false});
+
+// Buttons
+function btnBind(id,onD,onU){
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();initA();onD();},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();onU();},{passive:false});
+  el.addEventListener('touchcancel',e=>{e.preventDefault();onU();},{passive:false});
+  el.addEventListener('mousedown',()=>{initA();onD();});
+  el.addEventListener('mouseup',()=>onU());
+  el.addEventListener('mouseleave',()=>onU());
+}
+btnBind('btn-gas',()=>IN.gas=true,()=>IN.gas=false);
+btnBind('btn-brake',()=>IN.brake=true,()=>IN.brake=false);
+btnBind('btn-siren',()=>toggleSiren(),()=>{});
+
+// === NPCs ===
+const NPC_C=['#22C55E','#F59E0B','#8B5CF6','#EC4899','#06B6D4','#F97316','#84CC16','#14B8A6','#A78BFA','#FB7185'];
+const npcs=[];
+
+function spawnNPC(bad){
+  const pos=findRoad();
+  const dirs=[0,Math.PI/2,Math.PI,-Math.PI/2];
+  npcs.push({x:pos.x,y:pos.y,a:dirs[Math.floor(Math.random()*4)],spd:0.8+Math.random()*0.8,baseSpd:0.8+Math.random()*0.8,col:bad?'#DC2626':NPC_C[Math.floor(Math.random()*NPC_C.length)],bad:!!bad,caught:false,tcd:0,w:T*0.85,h:T*1.4});
+}
+for(let i=0;i<12;i++)spawnNPC(false);
+for(let i=0;i<3;i++)spawnNPC(true);
+
+// === PICKUPS ===
+const picks=[];
+function spawnPick(){
+  const p=findRoad();
+  const types=['⭐','💰','🍩','⛽','🔧','🎁'];
+  picks.push({x:p.x,y:p.y,type:types[Math.floor(Math.random()*types.length)],alive:true,bob:Math.random()*6});
+}
+for(let i=0;i<25;i++)spawnPick();
+
+// === STATE ===
+let score=0,caught=0,started=false;
+let tireMarks=[];
+
+function showPop(text,sx,sy){
+  const el=document.createElement('div');el.className='catch-pop';el.textContent=text;
+  el.style.left=sx+'px';el.style.top=sy+'px';document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+
+// === UPDATE ===
+function update(){
+  if(!started)return;
+
+  // Gas/Brake - EASY reverse: same speed backwards
+  if(IN.gas) P.spd=Math.min(P.spd+0.09,P.maxS);
+  else if(IN.brake) P.spd=Math.max(P.spd-0.08,-P.maxS*0.7); // can reverse at 70% speed!
+  else{if(P.spd>0)P.spd=Math.max(0,P.spd-0.018);else P.spd=Math.min(0,P.spd+0.018);}
+
+  // Joystick forward/back
+  if(joyActive){
+    if(IN.steerY<-0.25) P.spd=Math.min(P.spd+0.08,P.maxS);
+    else if(IN.steerY>0.3) P.spd=Math.max(P.spd-0.07,-P.maxS*0.7);
+  }
+
+  // Steer - works well even in reverse
+  if(Math.abs(P.spd)>0.08){
+    const ts=0.042*Math.min(1,Math.abs(P.spd)/1.8);
+    const dir=P.spd>=0?1:-1;
+    P.a+=IN.steerX*ts*dir;
+  }
+
+  // Move
+  const sa=Math.sin(P.a),ca=Math.cos(P.a);
+  const nx=P.x+sa*P.spd;
+  const ny=P.y-ca*P.spd;
+
+  // Collision: check 4 corners + center front/back
+  const hw=P.w*0.35, hh=P.h*0.35;
+  const testPts=[
+    {x:nx+sa*hh-ca*hw, y:ny-ca*hh-sa*hw},
+    {x:nx+sa*hh+ca*hw, y:ny-ca*hh+sa*hw},
+    {x:nx-sa*hh-ca*hw, y:ny+ca*hh-sa*hw},
+    {x:nx-sa*hh+ca*hw, y:ny+ca*hh+sa*hw},
+    {x:nx+sa*hh*1.1,   y:ny-ca*hh*1.1},    // front center
+    {x:nx-sa*hh*1.1,   y:ny+ca*hh*1.1},    // rear center
+  ];
+
+  let hitAny=false;
+  for(const p of testPts)if(isSolid(p.x,p.y)){hitAny=true;break;}
+
+  if(!hitAny){
+    P.x=nx;P.y=ny;
+  } else {
+    // PUSH-BACK: instead of getting stuck, push the car away from the building
+    // Try X-only, Y-only movement
+    let hitX=false,hitY=false;
+    for(const p of [{x:nx,y:P.y},{x:nx+sa*hh,y:P.y},{x:nx-sa*hh,y:P.y}])
+      if(isSolid(p.x,p.y)){hitX=true;break;}
+    for(const p of [{x:P.x,y:ny},{x:P.x,y:ny-ca*hh},{x:P.x,y:ny+ca*hh}])
+      if(isSolid(p.x,p.y)){hitY=true;break;}
+
+    if(!hitX) P.x=nx;
+    else P.x += (P.x<nx?-1:1)*0.5; // gentle push away
+
+    if(!hitY) P.y=ny;
+    else P.y += (P.y<ny?-1:1)*0.5; // gentle push away
+
+    // Don't kill speed completely - just slow down
+    P.spd*=0.6;
+    if(Math.abs(P.spd)>1) sfxBump();
+  }
+
+  // Keep in world
+  P.x=Math.max(T,Math.min(CS*T-T,P.x));
+  P.y=Math.max(T,Math.min(CS*T-T,P.y));
+
+  // Tire marks
+  if(Math.abs(IN.steerX)>0.4&&Math.abs(P.spd)>1.8){
+    tireMarks.push({x:P.x-sa*P.h*0.3,y:P.y+ca*P.h*0.3,life:1});
+    if(tireMarks.length>400)tireMarks.shift();
+  }
+  tireMarks.forEach(t=>t.life-=0.003);
+  tireMarks=tireMarks.filter(t=>t.life>0);
+
+  // Siren
+  if(sirenOn){
+    P.st+=0.15;
+    const ov=document.getElementById('sov');
+    const ph=Math.sin(P.st);
+    ov.style.opacity='1';
+    ov.style.background=ph>0.3?'rgba(59,130,246,0.04)':ph<-0.3?'rgba(239,68,68,0.04)':'transparent';
+  }else document.getElementById('sov').style.opacity='0';
+
+  // NPCs
+  npcs.forEach(n=>{
+    if(n.caught)return;
+    if(n.bad&&sirenOn){
+      const dx=n.x-P.x,dy=n.y-P.y,dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<T*14){
+        const fa=Math.atan2(dy,dx)-Math.PI/2;
+        let diff=fa-n.a;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+        n.a+=diff*0.05;n.spd=n.baseSpd*2;
+      }else n.spd=n.baseSpd;
+    }else n.spd=n.baseSpd;
+
+    n.tcd--;
+    const lk=T*2.5;
+    const fx=n.x+Math.sin(n.a)*lk,fy=n.y-Math.cos(n.a)*lk;
+    if(isSolid(fx,fy)||(n.tcd<=0&&Math.random()<0.012)){
+      const turns=[Math.PI/2,-Math.PI/2];
+      let turned=false;
+      for(const tr of turns){const ta=n.a+tr;if(!isSolid(n.x+Math.sin(ta)*lk,n.y-Math.cos(ta)*lk)){n.a=ta;turned=true;break;}}
+      if(!turned)n.a+=Math.PI;
+      n.tcd=30+Math.floor(Math.random()*50);
+    }
+    const nnx=n.x+Math.sin(n.a)*n.spd,nny=n.y-Math.cos(n.a)*n.spd;
+    if(!isSolid(nnx,nny)){n.x=nnx;n.y=nny;}
+    else{n.a+=Math.PI/2;n.tcd=5;}
+    n.x=((n.x%(CS*T))+CS*T)%(CS*T);
+    n.y=((n.y%(CS*T))+CS*T)%(CS*T);
+
+    if(n.bad){
+      const dx=P.x-n.x,dy=P.y-n.y;
+      if(dx*dx+dy*dy<T*T*2&&Math.abs(P.spd)>0.2){
+        n.caught=true;caught++;score+=500;sfxCatch();
+        document.getElementById('h-caught').textContent=caught;
+        showPop('🚨 +500!',W/2+(n.x-P.x),H/2+(n.y-P.y));
+        setTimeout(()=>{const i=npcs.indexOf(n);if(i>-1)npcs.splice(i,1);spawnNPC(true);},3000);
+      }
+    }
+  });
+
+  picks.forEach(p=>{
+    if(!p.alive)return;p.bob+=0.04;
+    const dx=P.x-p.x,dy=P.y-p.y;
+    if(dx*dx+dy*dy<T*T*1.5){
+      p.alive=false;score+=100;sfxPick();
+      showPop(p.type+' +100!',W/2+(p.x-P.x),H/2+(p.y-P.y));
+      setTimeout(()=>{const np=findRoad();p.x=np.x;p.y=np.y;p.alive=true;},5000);
+    }
+  });
+
+  document.getElementById('h-spd').textContent=Math.floor(Math.abs(P.spd)*25);
+  document.getElementById('h-score').textContent=score;
+}
+
+// === DRAW ===
+function draw(){
+  X.fillStyle='#1a2810';X.fillRect(0,0,W,H);
+  const cx=P.x-W/2,cy=P.y-H/2;
+  const sc=Math.max(0,Math.floor(cx/T)-1),ec=Math.min(CS,Math.ceil((cx+W)/T)+1);
+  const sr=Math.max(0,Math.floor(cy/T)-1),er=Math.min(CS,Math.ceil((cy+H)/T)+1);
+
+  for(let r=sr;r<er;r++)for(let c=sc;c<ec;c++){
+    const x=c*T-cx,y=r*T-cy,t=grid[r][c];
+    if(t===1){
+      X.fillStyle='#3B4252';X.fillRect(x,y,T+1,T+1);
+      const mr=r%BLK,mc=c%BLK;
+      // Center lane dashes
+      if(mc===Math.floor(RW/2)&&mr>=RW&&r%2===0){X.fillStyle='#FCD34D';X.fillRect(x+T/2-1,y+6,2,T-12);}
+      if(mr===Math.floor(RW/2)&&mc>=RW&&c%2===0){X.fillStyle='#FCD34D';X.fillRect(x+6,y+T/2-1,T-12,2);}
+      // Edge white lines on road boundary
+      if(mc===RW-1&&mr>=RW){X.fillStyle='rgba(255,255,255,0.15)';X.fillRect(x+T-1,y,2,T+1);}
+      if(mr===RW-1&&mc>=RW){X.fillStyle='rgba(255,255,255,0.15)';X.fillRect(x,y+T-1,T+1,2);}
+      if(mc===0&&mr>=RW){X.fillStyle='rgba(255,255,255,0.15)';X.fillRect(x,y,2,T+1);}
+      if(mr===0&&mc>=RW){X.fillStyle='rgba(255,255,255,0.15)';X.fillRect(x,y,T+1,2);}
+    } else if(t===2){
+      const bk=`${Math.floor(r/BLK)}_${Math.floor(c/BLK)}`;
+      const col=bCol[bk]||'#4A5568';
+      // Draw building with rounded feel (smaller than tile)
+      const m=3; // visual margin
+      X.fillStyle=col;
+      X.fillRect(x+m,y+m,T-m*2+1,T-m*2+1);
+      // Roof shadow
+      X.fillStyle='rgba(0,0,0,0.2)';
+      X.fillRect(x+T-m-4,y+m,4,T-m*2+1);
+      X.fillRect(x+m,y+T-m-4,T-m*2+1,4);
+      // Windows
+      X.fillStyle='rgba(255,255,180,0.3)';
+      const wr=(r*7+c*13)%5;
+      if(wr<2){X.fillRect(x+8,y+8,8,8);X.fillRect(x+T-16,y+T-16,8,8);}
+      if(wr===0){X.fillRect(x+T-16,y+8,8,8);}
+      // Sidewalk around building
+      X.fillStyle='#8090A0';
+      // Top
+      if(r>0&&grid[r-1]&&grid[r-1][c]===1){X.fillRect(x,y,T+1,m);}
+      // Bottom
+      if(r<CS-1&&grid[r+1]&&grid[r+1][c]===1){X.fillRect(x,y+T-m+1,T+1,m);}
+      // Left
+      if(c>0&&grid[r][c-1]===1){X.fillRect(x,y,m,T+1);}
+      // Right
+      if(c<CS-1&&grid[r][c+1]===1){X.fillRect(x+T-m+1,y,m,T+1);}
+    } else if(t===4){
+      X.fillStyle='#1A6B34';X.fillRect(x,y,T+1,T+1);
+      X.fillStyle='#1D8040';X.beginPath();X.arc(x+T/2,y+T/2,T*0.35,0,Math.PI*2);X.fill();
+      X.fillStyle='#145E2B';X.beginPath();X.arc(x+T*0.35,y+T*0.4,T*0.18,0,Math.PI*2);X.fill();
+    }
+  }
+
+  // Tire marks
+  X.fillStyle='rgba(20,20,20,0.6)';
+  tireMarks.forEach(t=>{X.globalAlpha=t.life*0.5;X.fillRect(t.x-cx-2,t.y-cy-2,4,4);});
+  X.globalAlpha=1;
+
+  // Pickups
+  picks.forEach(p=>{
+    if(!p.alive)return;
+    const px=p.x-cx,py=p.y-cy+Math.sin(p.bob)*4;
+    if(px<-60||px>W+60||py<-60||py>H+60)return;
+    X.globalAlpha=0.35;X.fillStyle='#FFD700';X.beginPath();X.arc(px,py,T*0.45,0,Math.PI*2);X.fill();
+    X.globalAlpha=1;X.font=`${T*0.6}px serif`;X.textAlign='center';X.textBaseline='middle';X.fillText(p.type,px,py);
+  });
+
+  // NPCs
+  npcs.forEach(n=>{
+    if(n.caught)return;
+    const nx=n.x-cx,ny=n.y-cy;
+    if(nx<-100||nx>W+100||ny<-100||ny>H+100)return;
+    drawCar(nx,ny,n.a,n.w,n.h,n.col,n.bad);
+  });
+
+  // Player
+  drawPolice(P.x-cx,P.y-cy,P.a,P.w,P.h);
+
+  // Arrow to nearest bad guy
+  drawArrow();
+
+  drawMini(cx,cy);
+}
+
+function drawCar(x,y,a,w,h,col,bad){
+  X.save();X.translate(x,y);X.rotate(a);
+  X.fillStyle='rgba(0,0,0,0.3)';rr(-w/2+3,-h/2+3,w,h,4);
+  X.fillStyle=col;rr(-w/2,-h/2,w,h,4);
+  X.fillStyle='rgba(0,0,0,0.12)';X.fillRect(-w/2+4,-h/4,w-8,h/2);
+  X.fillStyle='rgba(135,206,235,0.6)';X.fillRect(-w/2+5,-h/2+3,w-10,h*0.16);
+  X.fillStyle='#FEF3C7';X.fillRect(-w/2+3,-h/2+1,5,3);X.fillRect(w/2-8,-h/2+1,5,3);
+  X.fillStyle='#EF4444';X.fillRect(-w/2+3,h/2-4,5,3);X.fillRect(w/2-8,h/2-4,5,3);
+  if(bad){
+    const pulse=0.5+Math.sin(Date.now()*0.005)*0.3;
+    X.strokeStyle=`rgba(255,60,60,${pulse})`;X.lineWidth=3;
+    X.beginPath();X.arc(0,0,h*0.65+Math.sin(Date.now()*0.004)*4,0,Math.PI*2);X.stroke();
+    X.fillStyle='#FFD700';X.font='bold 16px sans-serif';X.textAlign='center';X.textBaseline='middle';X.fillText('⚠',0,0);
+  }
+  X.restore();
+}
+
+function drawPolice(x,y,a,w,h){
+  X.save();X.translate(x,y);X.rotate(a);
+  X.fillStyle='rgba(0,0,0,0.4)';rr(-w/2+3,-h/2+3,w,h,5);
+  X.fillStyle='#F0F2F5';rr(-w/2,-h/2,w,h,5);
+  X.fillStyle='#1F2937';X.fillRect(-w/2+2,3,w-4,h/2-5);
+  X.fillStyle='#2563EB';X.fillRect(-w/2,0,w,5);
+  X.fillStyle='#93C5FD';X.fillRect(-w/2+5,-h/2+4,w-10,h*0.16);
+  X.fillStyle='#FFF8DC';X.fillRect(-w/2+3,-h/2+1,6,4);X.fillRect(w/2-9,-h/2+1,6,4);
+  X.fillStyle='#EF4444';X.fillRect(-w/2+3,h/2-4,6,3);X.fillRect(w/2-9,h/2-4,6,3);
+  const st=Date.now()*0.008;
+  const sR=Math.sin(st)>0&&sirenOn,sB=Math.sin(st)<=0&&sirenOn;
+  X.fillStyle=sR?'#EF4444':'#4A1919';X.fillRect(-w/2+3,-5,w/2-4,7);
+  X.fillStyle=sB?'#3B82F6':'#192F4A';X.fillRect(1,-5,w/2-4,7);
+  if(sirenOn){X.globalAlpha=0.1;X.fillStyle=sR?'#EF4444':'#3B82F6';X.beginPath();X.arc(0,0,T*2.5,0,Math.PI*2);X.fill();X.globalAlpha=1;}
+  X.fillStyle='#2563EB';X.font='bold 6px sans-serif';X.textAlign='center';X.fillText('POLICE',0,h*0.3);
+  X.restore();
+}
+
+function drawArrow(){
+  let nearest=null,bestD=Infinity;
+  npcs.forEach(n=>{if(!n.bad||n.caught)return;const dx=n.x-P.x,dy=n.y-P.y,d=dx*dx+dy*dy;if(d<bestD){bestD=d;nearest=n;}});
+  if(!nearest||bestD<(T*8)**2)return;
+  const dx=nearest.x-P.x,dy=nearest.y-P.y;
+  const ang=Math.atan2(dx,dy);
+  const dist=Math.min(120,Math.min(W,H)*0.35);
+  const ax=W/2+Math.sin(ang)*dist,ay=H/2+Math.cos(ang)*dist;
+  X.save();X.translate(ax,ay);X.rotate(-ang);
+  X.fillStyle=`rgba(239,68,68,${0.5+Math.sin(Date.now()*0.004)*0.2})`;
+  X.beginPath();X.moveTo(0,-14);X.lineTo(-10,10);X.lineTo(10,10);X.closePath();X.fill();
+  X.fillStyle='#DC2626';X.beginPath();X.arc(0,-18,4,0,Math.PI*2);X.fill();
+  X.restore();
+}
+
+function rr(x,y,w,h,r){X.beginPath();X.moveTo(x+r,y);X.lineTo(x+w-r,y);X.quadraticCurveTo(x+w,y,x+w,y+r);X.lineTo(x+w,y+h-r);X.quadraticCurveTo(x+w,y+h,x+w-r,y+h);X.lineTo(x+r,y+h);X.quadraticCurveTo(x,y+h,x,y+h-r);X.lineTo(x,y+r);X.quadraticCurveTo(x,y,x+r,y);X.closePath();X.fill();}
+
+function drawMini(cx,cy){
+  const mw=MC.width,s=mw/(CS*T);
+  MX.fillStyle='#111';MX.fillRect(0,0,mw,mw);
+  for(let r=0;r<CS;r+=2)for(let c=0;c<CS;c+=2){
+    const t=grid[r][c];
+    if(t===1)MX.fillStyle='#444';else if(t===2)MX.fillStyle='#2a2a2a';else if(t===4)MX.fillStyle='#1a3a1a';else continue;
+    MX.fillRect(c*T*s,r*T*s,T*2*s+1,T*2*s+1);
+  }
+  npcs.forEach(n=>{if(!n.bad||n.caught)return;MX.fillStyle='#EF4444';MX.beginPath();MX.arc(n.x*s,n.y*s,3,0,Math.PI*2);MX.fill();});
+  MX.fillStyle='#FFD700';picks.forEach(p=>{if(!p.alive)return;MX.fillRect(p.x*s-1,p.y*s-1,2,2);});
+  MX.fillStyle='#3B82F6';MX.beginPath();MX.arc(P.x*s,P.y*s,4,0,Math.PI*2);MX.fill();
+  MX.strokeStyle='#fff';MX.lineWidth=1;MX.stroke();
+  MX.strokeStyle='rgba(255,255,255,0.15)';MX.strokeRect(cx*s,cy*s,W*s,H*s);
+}
+
+// === START ===
+document.getElementById('go').addEventListener('click',()=>{
+  initA();const el=document.getElementById('start');
+  el.style.opacity='0';setTimeout(()=>el.style.display='none',400);started=true;
+});
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>
