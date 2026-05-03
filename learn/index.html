@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Star Quest Academy — Grade 1 FA1</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Bubblegum+Sans&family=Amiri:wght@400;700&family=Hind:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8EE;
+    --peach:#FFD5B8;
+    --pink:#FF9FB8;
+    --lilac:#C7A8F0;
+    --sky:#9BD7FF;
+    --mint:#A8E6CF;
+    --sun:#FFD86B;
+    --coral:#FF7B6B;
+    --plum:#5B3A87;
+    --ink:#2D2640;
+    --gold:#F5B62E;
+    --shadow: 0 6px 0 rgba(45,38,64,0.18);
+    --shadow-deep: 0 10px 30px rgba(91,58,135,0.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow-x:hidden}
+  body{
+    font-family:'Fredoka',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(255,159,184,0.25) 0%, transparent 30%),
+      radial-gradient(circle at 90% 80%, rgba(155,215,255,0.3) 0%, transparent 35%),
+      radial-gradient(circle at 50% 50%, rgba(199,168,240,0.15) 0%, transparent 50%);
+    min-height:100vh;
+    user-select:none;
+  }
+  /* Floating sparkles bg */
+  .sparkles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .sparkles span{position:absolute;font-size:20px;opacity:0;animation:float 8s linear infinite}
+  @keyframes float{
+    0%{transform:translateY(100vh) rotate(0deg);opacity:0}
+    10%{opacity:.7}
+    90%{opacity:.7}
+    100%{transform:translateY(-10vh) rotate(360deg);opacity:0}
+  }
+
+  /* Top status bar */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,248,238,0.95);
+    backdrop-filter:blur(10px);
+    border-bottom:3px solid var(--plum);
+    padding:12px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+    box-shadow:0 4px 0 rgba(91,58,135,0.1);
+  }
+  .logo{font-family:'Bubblegum Sans',cursive;font-size:22px;color:var(--plum);display:flex;align-items:center;gap:8px}
+  .logo .star{font-size:24px;animation:spin 4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .stats{display:flex;gap:12px;align-items:center}
+  .stat{
+    background:white;border:3px solid var(--plum);border-radius:20px;
+    padding:6px 14px;font-weight:600;font-size:15px;
+    display:flex;align-items:center;gap:5px;
+    box-shadow:var(--shadow);
+  }
+  .stat .icon{font-size:18px}
+
+  /* Screens */
+  .screen{display:none;padding:20px;max-width:900px;margin:0 auto;position:relative;z-index:1}
+  .screen.active{display:block;animation:fadeIn .5s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+  /* HOME — subject tiles */
+  .welcome{text-align:center;margin:20px 0 30px}
+  .welcome h1{font-family:'Bubblegum Sans',cursive;font-size:42px;color:var(--plum);line-height:1}
+  .welcome p{font-size:18px;color:var(--ink);margin-top:8px;opacity:.8}
+  .subject-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:16px;
+    padding:10px;
+  }
+  .subject-tile{
+    background:white;
+    border:4px solid var(--plum);
+    border-radius:24px;
+    padding:18px 12px;
+    text-align:center;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform .15s, box-shadow .15s;
+    position:relative;
+    overflow:hidden;
+  }
+  .subject-tile:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(45,38,64,0.18)}
+  .subject-tile::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:60%;
+    background:var(--tile-color, var(--peach));
+    z-index:0;
+  }
+  .subject-tile > *{position:relative;z-index:1}
+  .subject-tile .emoji{font-size:48px;display:block;margin-bottom:8px;filter:drop-shadow(0 3px 0 rgba(0,0,0,0.15))}
+  .subject-tile .name{font-weight:700;font-size:16px;color:var(--ink)}
+  .subject-tile .progress-mini{
+    margin-top:6px;font-size:11px;font-weight:600;color:var(--plum);
+    background:rgba(255,255,255,0.7);border-radius:10px;padding:2px 6px;display:inline-block;
+  }
+  .subject-tile .stars-mini{font-size:13px;color:var(--gold);margin-top:4px;letter-spacing:1px}
+
+  /* Subject screen — game */
+  .game-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:20px;gap:10px;
+  }
+  .back-btn{
+    background:var(--coral);color:white;border:none;border-radius:50%;
+    width:50px;height:50px;font-size:24px;font-weight:700;cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .back-btn:active{transform:translateY(3px)}
+  .game-title{
+    font-family:'Bubblegum Sans',cursive;font-size:24px;color:var(--plum);
+    text-align:center;flex:1;
+  }
+  .progress-bar{
+    background:white;border:3px solid var(--plum);border-radius:20px;
+    height:24px;overflow:hidden;margin-bottom:20px;box-shadow:var(--shadow);
+  }
+  .progress-fill{
+    height:100%;background:linear-gradient(90deg,var(--mint),var(--sky));
+    transition:width .5s cubic-bezier(.5,0,.3,1.3);
+    width:0%;
+  }
+
+  .activity-card{
+    background:white;border:4px solid var(--plum);border-radius:28px;
+    padding:24px;box-shadow:var(--shadow-deep);
+    min-height:400px;
+    display:flex;flex-direction:column;
+  }
+  .question{
+    font-size:22px;font-weight:600;text-align:center;margin-bottom:20px;
+    color:var(--plum);line-height:1.3;
+  }
+  .question-big{font-size:48px;font-weight:700;text-align:center;margin:20px 0;color:var(--plum)}
+  .arabic-text,.malayalam-text,.hindi-text{font-family:'Amiri',serif;font-size:48px;direction:rtl}
+  .hindi-text{font-family:'Hind',sans-serif;direction:ltr}
+
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:auto}
+  .options.col-1{grid-template-columns:1fr}
+  .options.col-3{grid-template-columns:repeat(3,1fr)}
+  .options.col-4{grid-template-columns:repeat(2,1fr)}
+  .opt{
+    background:white;border:3px solid var(--plum);border-radius:18px;
+    padding:18px 12px;font-size:20px;font-weight:600;cursor:pointer;
+    transition:all .15s;font-family:inherit;color:var(--ink);
+    box-shadow:var(--shadow);min-height:64px;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+  }
+  .opt:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(45,38,64,0.18)}
+  .opt.correct{background:var(--mint);border-color:#2e8b57;animation:pulse .5s}
+  .opt.wrong{background:var(--coral);color:white;border-color:#c0392b;animation:shake .4s}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  .opt.big-num{font-size:36px;font-weight:700}
+  .opt.arabic-opt{font-family:'Amiri',serif;font-size:32px}
+  .opt.hindi-opt{font-family:'Hind',sans-serif;font-size:28px}
+  .opt.mal-opt{font-size:32px}
+
+  .feedback{
+    text-align:center;margin-top:16px;font-size:20px;font-weight:600;
+    min-height:30px;color:var(--plum);
+  }
+
+  /* Picture-based content */
+  .pic-area{
+    text-align:center;margin:20px 0;
+    background:linear-gradient(135deg,var(--sky),var(--mint));
+    border-radius:20px;padding:30px;border:3px dashed var(--plum);
+  }
+  .pic-area .emoji-big{font-size:100px;display:block}
+  .pic-row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:16px 0}
+  .pic-card{
+    background:white;border:3px solid var(--plum);border-radius:16px;
+    padding:14px;font-size:48px;cursor:pointer;
+    box-shadow:var(--shadow);min-width:80px;text-align:center;
+    transition:all .15s;
+  }
+  .pic-card:active{transform:translateY(3px)}
+  .pic-card.selected{background:var(--sun);transform:scale(1.05)}
+  .pic-card.matched{background:var(--mint);opacity:.7}
+  .pic-card .label{font-size:14px;font-weight:600;display:block;margin-top:4px;color:var(--ink)}
+
+  /* Speak button */
+  .speak-btn{
+    background:var(--lilac);color:white;border:none;border-radius:50px;
+    padding:14px 28px;font-size:18px;font-weight:600;cursor:pointer;
+    box-shadow:var(--shadow);font-family:inherit;
+    display:inline-flex;align-items:center;gap:8px;margin:10px auto;
+  }
+  .speak-btn:active{transform:translateY(3px)}
+
+  /* Drag-drop / sequence */
+  .sequence-area{
+    display:flex;justify-content:center;gap:8px;margin:20px 0;flex-wrap:wrap;
+    min-height:80px;padding:12px;
+    background:#fff8e8;border-radius:16px;border:3px dashed var(--gold);
+  }
+  .seq-slot{
+    width:60px;height:60px;background:white;border:2px solid var(--plum);border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;
+    color:var(--plum);
+  }
+  .seq-slot.filled{background:var(--mint)}
+  .seq-pool{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:16px 0}
+  .seq-piece{
+    width:60px;height:60px;background:var(--sun);border:2px solid var(--plum);border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;
+    cursor:pointer;box-shadow:var(--shadow);
+  }
+  .seq-piece:active{transform:translateY(2px)}
+  .seq-piece.used{opacity:.3;pointer-events:none}
+
+  /* Reward animations */
+  .reward-overlay{
+    position:fixed;inset:0;background:rgba(45,38,64,0.7);
+    display:none;align-items:center;justify-content:center;z-index:100;
+    backdrop-filter:blur(4px);
+  }
+  .reward-overlay.show{display:flex;animation:fadeIn .3s}
+  .reward-card{
+    background:white;border-radius:32px;padding:40px 30px;text-align:center;
+    border:6px solid var(--gold);box-shadow:var(--shadow-deep);
+    max-width:340px;animation:popIn .5s cubic-bezier(.5,0,.3,1.5);
+  }
+  @keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .reward-card .big-emoji{font-size:80px;display:block;margin-bottom:10px;animation:bounce 1s infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+  .reward-card h2{font-family:'Bubblegum Sans',cursive;font-size:34px;color:var(--plum);margin-bottom:8px}
+  .reward-card p{font-size:18px;margin-bottom:20px}
+  .reward-card .star-shower{font-size:32px;letter-spacing:8px;color:var(--gold);margin:10px 0}
+  .reward-card button{
+    background:var(--coral);color:white;border:none;border-radius:50px;
+    padding:14px 30px;font-size:18px;font-weight:600;cursor:pointer;
+    box-shadow:var(--shadow);font-family:inherit;
+  }
+
+  /* Confetti */
+  .confetti{position:fixed;top:-20px;width:10px;height:10px;z-index:99;pointer-events:none}
+
+  /* Speaking task */
+  .speak-task{text-align:center;padding:20px}
+  .speak-task .prompt-big{font-size:24px;font-weight:600;margin-bottom:20px;color:var(--plum)}
+  .speak-task .mic-btn{
+    width:100px;height:100px;border-radius:50%;background:var(--coral);
+    color:white;font-size:50px;border:none;cursor:pointer;
+    box-shadow:var(--shadow-deep);margin:20px auto;display:block;
+  }
+  .speak-task .mic-btn.recording{background:var(--gold);animation:pulse 1s infinite}
+
+  /* Reflective tasks */
+  .reflective{text-align:center}
+  .reflective .options-card{
+    background:linear-gradient(135deg,var(--peach),var(--pink));
+    border-radius:20px;padding:20px;margin:12px 0;border:3px solid var(--plum);
+  }
+  .reflective h3{font-family:'Bubblegum Sans',cursive;font-size:22px;color:var(--plum);margin-bottom:10px}
+  .reflective p{font-size:16px;line-height:1.5;margin-bottom:8px}
+  .reflective ul{text-align:left;margin:8px 20px;font-size:15px;line-height:1.7}
+  .done-btn{
+    background:var(--mint);border:3px solid var(--plum);border-radius:50px;
+    padding:14px 28px;font-size:18px;font-weight:600;cursor:pointer;
+    box-shadow:var(--shadow);font-family:inherit;color:var(--ink);margin-top:14px;
+  }
+
+  /* Trophy room */
+  .trophy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
+  .trophy{
+    background:white;border:3px solid var(--plum);border-radius:18px;
+    padding:14px;text-align:center;box-shadow:var(--shadow);
+  }
+  .trophy.locked{opacity:.4;filter:grayscale(1)}
+  .trophy .t-emoji{font-size:40px;display:block}
+  .trophy .t-name{font-size:13px;font-weight:600;margin-top:6px}
+
+  /* Number compare */
+  .compare-row{display:flex;align-items:center;justify-content:center;gap:16px;margin:20px 0}
+  .compare-num{
+    font-size:64px;font-weight:700;color:var(--plum);
+    background:var(--sun);border:4px solid var(--plum);border-radius:20px;
+    padding:14px 24px;min-width:100px;text-align:center;
+    box-shadow:var(--shadow);
+  }
+
+  /* Tap-the-correct-color (UAE flag) */
+  .flag-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}
+  .flag-stripe{
+    height:60px;border:3px solid var(--plum);border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;cursor:pointer;box-shadow:var(--shadow);
+    background:#eee;font-size:18px;
+  }
+  .flag-stripe.picked{transform:scale(.95);box-shadow:none}
+
+  @media (max-width:480px){
+    .welcome h1{font-size:32px}
+    .question{font-size:18px}
+    .question-big{font-size:36px}
+    .arabic-text{font-size:36px}
+    .opt{font-size:18px;padding:14px 8px;min-height:56px}
+    .opt.big-num{font-size:30px}
+    .pic-card{font-size:40px;min-width:70px}
+  }
+</style>
+</head>
+<body>
+
+<div class="sparkles" id="sparkles"></div>
+
+<div class="topbar">
+  <div class="logo"><span class="star">⭐</span> Star Quest</div>
+  <div class="stats">
+    <div class="stat"><span class="icon">⭐</span><span id="totalStars">0</span></div>
+    <div class="stat"><span class="icon">🏆</span><span id="totalTrophies">0</span></div>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home" class="screen active">
+  <div class="welcome">
+    <h1>Hello, Star! ✨</h1>
+    <p>Pick a world to play and learn!</p>
+  </div>
+  <div class="subject-grid" id="subjectGrid"></div>
+  <div style="text-align:center;margin-top:30px">
+    <button class="speak-btn" onclick="showTrophyRoom()">🏆 My Trophy Room</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game" class="screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="game-title" id="gameTitle"></div>
+    <div style="width:50px"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="activity-card" id="activityCard"></div>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<!-- TROPHY SCREEN -->
+<div id="trophyRoom" class="screen">
+  <div class="game-header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="game-title">🏆 My Trophies</div>
+    <div style="width:50px"></div>
+  </div>
+  <div class="trophy-grid" id="trophyGrid"></div>
+</div>
+
+<!-- REWARD POPUP -->
+<div class="reward-overlay" id="rewardOverlay">
+  <div class="reward-card">
+    <span class="big-emoji" id="rewardEmoji">🎉</span>
+    <h2 id="rewardTitle">Amazing!</h2>
+    <p id="rewardMsg">You finished a quest!</p>
+    <div class="star-shower" id="rewardStars">⭐⭐⭐</div>
+    <button onclick="closeReward()">Yay! 🎈</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   STAR QUEST ACADEMY — Grade 1 FA1
+   ========================================================= */
+
+// ---------- State ----------
+const STORAGE_KEY = 'starquest_g1_progress';
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {stars:0, trophies:[], subjectStars:{}};
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+// ---------- Subjects config ----------
+const SUBJECTS = [
+  {id:'english', name:'English', emoji:'📖', color:'#FF9FB8'},
+  {id:'maths',   name:'Maths',   emoji:'🔢', color:'#9BD7FF'},
+  {id:'arabic',  name:'Arabic',  emoji:'🕌', color:'#FFD86B'},
+  {id:'hindi',   name:'Hindi',   emoji:'🪔', color:'#FFD5B8'},
+  {id:'french',  name:'French',  emoji:'🥖', color:'#C7A8F0'},
+  {id:'malayalam',name:'Malayalam',emoji:'🌴',color:'#A8E6CF'},
+  {id:'wau',     name:'World Around Us', emoji:'🌱', color:'#A8E6CF'},
+  {id:'islamic', name:'Islamic Studies', emoji:'🌙', color:'#C7A8F0'},
+  {id:'mscs',    name:'MSCS', emoji:'👨‍👩‍👧', color:'#FF9FB8'},
+  {id:'lifeskills',name:'Life Skills', emoji:'🤝', color:'#FFD86B'},
+];
+
+// ---------- Question banks ----------
+const QUESTIONS = {
+  english: [
+    {type:'mcq', q:'Which one is a VOWEL?', opts:['B','A','M','T'], a:1, hint:'Vowels: A E I O U'},
+    {type:'mcq', q:'Which one is a VOWEL?', opts:['K','P','E','S'], a:2},
+    {type:'mcq', q:'Which one is a CONSONANT?', opts:['O','I','D','U'], a:2},
+    {type:'mcq', q:'Pick the correct sentence:', opts:['i love mom.','I love Mom.','i love Mom','I love mom'], a:1, hint:'Capital letter & full stop!'},
+    {type:'mcq', q:'Every sentence ends with a...', opts:['Comma ,','Full stop .','Letter','Number'], a:1},
+    {type:'mcq', q:'Read: "The cat sat on the mat." Where did the cat sit?', opts:['On a chair','On the mat','On the bed','On a tree'], a:1},
+    {type:'pic-mcq', q:'What do you see?', emoji:'👨‍👩‍👧', opts:['Family','Car','Tree','Star'], a:0},
+    {type:'pic-mcq', q:'What do you see?', emoji:'🌳', opts:['Cat','Tree','Boat','Cake'], a:1},
+    {type:'mcq', q:'My mother\'s mother is my...', opts:['Aunt','Sister','Grandmother','Cousin'], a:2},
+    {type:'mcq', q:'Which letter is missing? A, B, __, D', opts:['E','C','F','G'], a:1},
+  ],
+
+  maths: [
+    {type:'mcq', q:'What number comes AFTER 7?', opts:['6','8','9','5'], a:1, big:true},
+    {type:'mcq', q:'What number comes BEFORE 10?', opts:['11','12','9','8'], a:2, big:true},
+    {type:'mcq', q:'What number is BETWEEN 4 and 6?', opts:['7','3','5','8'], a:2, big:true},
+    {type:'mcq', q:'How do we say "25"?', opts:['Twenty-five','Fifty-two','Twenty-three','Fifteen'], a:0},
+    {type:'mcq', q:'How do we say "47"?', opts:['Fourteen','Forty-seven','Seventy-four','Seventeen'], a:1},
+    {type:'mcq', q:'In 38, what is the place value of 3?', opts:['3','30','8','13'], a:1, hint:'3 is in the tens place!'},
+    {type:'mcq', q:'In 56, the face value of 6 is?', opts:['60','6','56','5'], a:1},
+    {type:'mcq', q:'Which is BIGGER?', opts:['23','32',' = '], a:1, big:true, type2:'compare'},
+    {type:'mcq', q:'Which sign goes here?  15 ___ 51', opts:['<','>','='], a:0, big:true},
+    {type:'mcq', q:'Which sign goes here?  40 ___ 40', opts:['<','>','='], a:2, big:true},
+    {type:'mcq', q:'Ascending order means...', opts:['Big to small','Small to big','Same','Mixed'], a:1},
+    {type:'mcq', q:'Pick ascending order:', opts:['9, 5, 2','2, 9, 5','2, 5, 9','5, 9, 2'], a:2},
+    {type:'mcq', q:'Pick descending order:', opts:['1, 4, 7','7, 4, 1','4, 7, 1','1, 7, 4'], a:1},
+    {type:'mcq', q:'What is the standard form of "Twenty + Three"?', opts:['203','23','32','230'], a:1},
+    {type:'mcq', q:'Expanded form of 45 is?', opts:['4 + 5','40 + 5','45 + 0','4 + 50'], a:1},
+    {type:'mcq', q:'Who is FIRST in line? 🐰🐢🦊', opts:['Fox','Turtle','Rabbit'], a:2},
+    {type:'mcq', q:'Who is THIRD in line? 🐶🐱🐭🐹', opts:['Dog','Cat','Mouse','Hamster'], a:2},
+    {type:'mcq', q:'What is 5th letter? A B C D E F', opts:['D','E','F','C'], a:1},
+  ],
+
+  arabic: [
+    {type:'speak', q:'Tap to hear & repeat: "أنا اسمي..."', text:'أنا اسمي', translit:'Ana ismi (My name is...)', lang:'ar-SA'},
+    {type:'speak', q:'Tap to hear & repeat: "أنا في الصف األول"', text:'أنا في الصف الأول', translit:'I am in Grade 1', lang:'ar-SA'},
+    {type:'speak', q:'Tap to hear & repeat: "أنا أعيش في دبي"', text:'أنا أعيش في دبي', translit:'I live in Dubai', lang:'ar-SA'},
+    {type:'mcq-ar', q:'Which letter is "Alif"?', opts:['ا','ب','ت','ث'], a:0},
+    {type:'mcq-ar', q:'Which letter is "Baa"?', opts:['ا','ب','ج','د'], a:1},
+    {type:'mcq-ar', q:'Which letter is "Taa"?', opts:['ث','ت','س','ش'], a:1},
+    {type:'mcq-ar', q:'What letter is missing? ا , ب , __ , ث', opts:['ج','ت','ح','د'], a:1},
+    {type:'mcq', q:'The UAE flag has how many colors?', opts:['2','3','4','5'], a:2, hint:'Red, Green, White, Black!'},
+    {type:'flag', q:'Tap the colors of the UAE flag (4 stripes)', correct:['Red','Green','White','Black'], all:['Red','Green','White','Black','Yellow','Blue','Purple','Orange']},
+    {type:'mcq-ar', q:'What word means "school"?', opts:['مدرسة','بيت','قلم','كتاب'], a:0},
+  ],
+
+  hindi: [
+    {type:'mcq-hi', q:'Which is the FIRST vowel?', opts:['आ','अ','इ','ई'], a:1},
+    {type:'mcq-hi', q:'Which letter is "Aa"?', opts:['अ','आ','इ','उ'], a:1},
+    {type:'mcq-hi', q:'Which letter is "Ee"?', opts:['अ','इ','ई','ए'], a:2},
+    {type:'pic-mcq-hi', q:'Apple — which letter does it start with in Hindi?', emoji:'🍎', opts:['स','आ','क','म'], a:0, hint:'सेब (seb)'},
+    {type:'pic-mcq-hi', q:'Mango — which letter does it start with in Hindi?', emoji:'🥭', opts:['अ','आ','इ','ई'], a:1, hint:'आम (aam)'},
+    {type:'pic-mcq-hi', q:'Tamarind — which letter does it start with in Hindi?', emoji:'🌰', opts:['अ','आ','इ','ई'], a:2, hint:'इमली (imli)'},
+    {type:'pic-mcq-hi', q:'Owl — which letter does it start with in Hindi?', emoji:'🦉', opts:['अ','उ','ऊ','ए'], a:1, hint:'उल्लू (ullu)'},
+    {type:'mcq-hi', q:'Find the missing vowel: अ, __, इ, ई', opts:['उ','ए','आ','ओ'], a:2},
+    {type:'speak', q:'My introduction: मेरा नाम...', text:'मेरा नाम', translit:'Mera naam (My name is...)', lang:'hi-IN'},
+    {type:'speak', q:'Say in Hindi: नमस्ते', text:'नमस्ते', translit:'Namaste (Hello)', lang:'hi-IN'},
+  ],
+
+  french: [
+    {type:'mcq', q:'How do you say HELLO in French?', opts:['Merci','Bonjour','Au revoir','Oui'], a:1},
+    {type:'mcq', q:'"Au revoir" means...', opts:['Hello','Thank you','Goodbye','Sorry'], a:2},
+    {type:'mcq', q:'"Merci" means...', opts:['Hello','Thank you','Sorry','Yes'], a:1},
+    {type:'mcq', q:'Put in order: B, ?, D, E. Missing letter?', opts:['A','C','F','G'], a:1},
+    {type:'mcq', q:'First letter of FRENCH alphabet?', opts:['B','A','C','D'], a:1},
+    {type:'mcq', q:'TRUE or FALSE: "Bonjour" is a greeting.', opts:['True','False'], a:0},
+    {type:'mcq', q:'TRUE or FALSE: French has 30 letters.', opts:['True','False'], a:1, hint:'It has 26, like English!'},
+    {type:'mcq', q:'Unscramble: H-A-T-C → ?', opts:['CHAT (cat)','HACT','TACH','CATH'], a:0, hint:'CHAT means CAT'},
+    {type:'mcq', q:'Unscramble: I-O-U → ?', opts:['UIO','OUI (yes)','IOU','UOI'], a:1},
+    {type:'mcq', q:'"Bonsoir" means...', opts:['Good morning','Good night','Good evening','Goodbye'], a:2},
+  ],
+
+  malayalam: [
+    {type:'mcq-mal', q:'Which is the first vowel?', opts:['അ','ആ','ഇ','ഈ'], a:0},
+    {type:'mcq-mal', q:'Which letter is "Aa"?', opts:['അ','ആ','ഇ','ഈ'], a:1},
+    {type:'mcq-mal', q:'Which letter is "Ee"?', opts:['അ','ആ','ഇ','ഈ'], a:3},
+    {type:'mcq-mal', q:'Pick the letter "റ"', opts:['ര','റ','ന','ത'], a:1},
+    {type:'mcq-mal', q:'Pick the letter "പ"', opts:['വ','മ','പ','ദ'], a:2},
+    {type:'pic-mcq-mal', q:'Elephant — which letter in Malayalam?', emoji:'🐘', opts:['അ','ആ','ഇ','ഈ'], a:1, hint:'ആന (aana)'},
+    {type:'pic-mcq-mal', q:'Fly — which letter in Malayalam?', emoji:'🪰', opts:['അ','ആ','ഇ','ഈ'], a:3, hint:'ഈച്ച (eecha)'},
+    {type:'mcq-mal', q:'Missing letter: അ, __, ഇ', opts:['ഈ','ആ','ഉ','ഋ'], a:1},
+    {type:'speak', q:'My family: എന്റെ കുടുംബം', text:'എന്റെ കുടുംബം', translit:'Ente kudumbam (My family)', lang:'ml-IN'},
+    {type:'mcq', q:'How many people are in YOUR family? Tap to count!', opts:['1','2','3','4 or more'], a:3, freeAnswer:true},
+  ],
+
+  wau: [
+    {type:'pic-mcq', q:'Is a CAT living or non-living?', emoji:'🐱', opts:['Living','Non-living'], a:0},
+    {type:'pic-mcq', q:'Is a CHAIR living or non-living?', emoji:'🪑', opts:['Living','Non-living'], a:1},
+    {type:'pic-mcq', q:'Is a TREE living or non-living?', emoji:'🌳', opts:['Living','Non-living'], a:0},
+    {type:'pic-mcq', q:'Is a CAR living or non-living?', emoji:'🚗', opts:['Living','Non-living'], a:1},
+    {type:'pic-mcq', q:'Is a BUTTERFLY living or non-living?', emoji:'🦋', opts:['Living','Non-living'], a:0},
+    {type:'mcq', q:'Living things can...', opts:['Eat & grow','Stay still forever','Never breathe','Never move'], a:0},
+    {type:'mcq', q:'Which is MAN-MADE?', opts:['Mountain','Phone','River','Cloud'], a:1},
+    {type:'mcq', q:'Which is NATURAL?', opts:['Pencil','Sun','Bicycle','House'], a:1},
+    {type:'mcq', q:'Which part of the plant takes water from the soil?', opts:['Leaves','Flower','Roots','Fruit'], a:2},
+    {type:'mcq', q:'Which part of the plant makes food?', opts:['Roots','Stem','Leaves','Flower'], a:2, hint:'Leaves use sunlight!'},
+    {type:'mcq', q:'Which part holds the plant up tall?', opts:['Roots','Stem','Leaves','Flower'], a:1},
+    {type:'mcq', q:'Where do new seeds come from?', opts:['Roots','Stem','Leaves','Fruit/Flower'], a:3},
+    {type:'mcq', q:'Plants need ___ to grow.', opts:['Only water','Sun, water & soil','Only soil','Toys'], a:1},
+  ],
+
+  islamic: [
+    {type:'mcq', q:'Who is our Lord (Rabb)?', opts:['Allah ﷻ','The Sun','The Moon','The Stars'], a:0},
+    {type:'mcq', q:'Allah ﷻ created...', opts:['Only people','Only animals','Everything','Nothing'], a:2},
+    {type:'mcq', q:'The first surah in the Qur\'an is...', opts:['Al-Ikhlas','Al-Fatiha','An-Nas','Al-Falaq'], a:1},
+    {type:'mcq', q:'Surah Al-Fatiha starts with "Bismillah ir-Rahman ir-..."', opts:['Raheem','Karim','Aleem','Hakim'], a:0},
+    {type:'mcq', q:'"Alhamdulillah" means...', opts:['Sorry','All praise to Allah','Hello','Goodnight'], a:1},
+    {type:'mcq', q:'How many ayahs (verses) are in Surah Al-Fatiha?', opts:['5','7','10','12'], a:1},
+    {type:'mcq', q:'Allah ﷻ is...', opts:['Far away','One (Al-Wahid)','Many','A statue'], a:1},
+    {type:'mcq', q:'When we start something good, we say...', opts:['Goodbye','Bismillah','Hi','Wow'], a:1},
+  ],
+
+  mscs: [
+    {type:'choice', q:'Pick a project to do at home with a grown-up!',
+      title:'Choose Your Project',
+      options:[
+        {emoji:'🖼️', name:'Family Photo Frame', desc:'Paste or draw your family. Decorate the frame. Write 2 sentences.'},
+        {emoji:'🌳', name:'Kindness Tree', desc:'Draw a big tree. On each leaf, write or draw a kind act!'}
+      ]},
+    {type:'mcq', q:'Family is...', opts:['Strangers','People who love & care for me','Toys','Food'], a:1},
+    {type:'mcq', q:'I show kindness when I...', opts:['Shout','Help & share','Hide','Ignore'], a:1},
+    {type:'mcq', q:'Who is in your family? (any answer is great!)', opts:['Mom','Dad','Brother/Sister','All of them!'], a:3, freeAnswer:true},
+    {type:'mcq', q:'A kind act is...', opts:['Pushing someone','Sharing my toys','Saying mean words','Taking without asking'], a:1},
+    {type:'reflective-task', title:'My Reflection', text:'Tell a grown-up: "I love my family because ___."'},
+  ],
+
+  lifeskills: [
+    {type:'mcq', q:'When someone gives you a gift, you say...', opts:['Bye','Thank you','Hi','Sorry'], a:1},
+    {type:'mcq', q:'When you bump into someone, you say...', opts:['Hi','Thanks','Sorry','Wow'], a:2},
+    {type:'mcq', q:'When you want something, you say...', opts:['Now!','Please','Move','Yuck'], a:1},
+    {type:'mcq', q:'When you want to pass through, you say...', opts:['Move!','Excuse me','Hello','Quiet'], a:1},
+    {type:'mcq', q:'Polite words help us...', opts:['Make people sad','Show respect','Win games','Eat fast'], a:1},
+    {type:'mcq', q:'Mom gives you food. You say...', opts:['Yuck','Thank you, Mom','Move','Hi'], a:1},
+    {type:'mcq', q:'You broke a toy. You say...', opts:['Not me!','Sorry','Bye','Wow'], a:1},
+    {type:'mcq', q:'Friend says hi. You say...', opts:['Nothing','Hi back!','Yuck','Move'], a:1},
+    {type:'reflective-task', title:'Make a Manners Chart!', text:'With a grown-up, make a chart with: Please, Thank you, Sorry, Excuse me. Add drawings for each!'},
+  ],
+};
+
+// ---------- Render Home ----------
+function renderHome(){
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = '';
+  SUBJECTS.forEach(s=>{
+    const stars = state.subjectStars[s.id] || 0;
+    const total = QUESTIONS[s.id]?.length || 0;
+    const tile = document.createElement('div');
+    tile.className = 'subject-tile';
+    tile.style.setProperty('--tile-color', s.color);
+    tile.innerHTML = `
+      <span class="emoji">${s.emoji}</span>
+      <div class="name">${s.name}</div>
+      <div class="progress-mini">${stars}/${total} ⭐</div>
+    `;
+    tile.onclick = ()=>startSubject(s.id);
+    grid.appendChild(tile);
+  });
+  document.getElementById('totalStars').textContent = state.stars;
+  document.getElementById('totalTrophies').textContent = state.trophies.length;
+}
+
+// ---------- Game flow ----------
+let currentSubject = null;
+let qIndex = 0;
+let sessionCorrect = 0;
+
+function startSubject(id){
+  currentSubject = id;
+  qIndex = 0;
+  sessionCorrect = 0;
+  showScreen('game');
+  const subj = SUBJECTS.find(s=>s.id===id);
+  document.getElementById('gameTitle').textContent = `${subj.emoji} ${subj.name}`;
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const qs = QUESTIONS[currentSubject];
+  if(qIndex >= qs.length){ finishSubject(); return; }
+  const q = qs[qIndex];
+  document.getElementById('progressFill').style.width = `${(qIndex/qs.length)*100}%`;
+  document.getElementById('feedback').textContent = '';
+
+  const card = document.getElementById('activityCard');
+  card.innerHTML = '';
+
+  if(q.type === 'mcq' || q.type === 'mcq-ar' || q.type === 'mcq-hi' || q.type === 'mcq-mal'){
+    renderMCQ(q, card);
+  } else if(q.type === 'pic-mcq' || q.type === 'pic-mcq-hi' || q.type === 'pic-mcq-mal'){
+    renderPicMCQ(q, card);
+  } else if(q.type === 'speak'){
+    renderSpeak(q, card);
+  } else if(q.type === 'flag'){
+    renderFlag(q, card);
+  } else if(q.type === 'choice'){
+    renderChoice(q, card);
+  } else if(q.type === 'reflective-task'){
+    renderReflective(q, card);
+  }
+}
+
+function renderMCQ(q, card){
+  const optClass = q.type==='mcq-ar' ? 'arabic-opt' : q.type==='mcq-hi' ? 'hindi-opt' : q.type==='mcq-mal' ? 'mal-opt' : '';
+  const bigClass = q.big ? 'big-num' : '';
+  const colClass = q.opts.length===3 ? 'col-3' : q.opts.length>4 ? 'col-4' : '';
+
+  card.innerHTML = `
+    <div class="question">${q.q}</div>
+    <div class="options ${colClass}" id="optsBox"></div>
+  `;
+  const box = card.querySelector('#optsBox');
+  q.opts.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className = `opt ${optClass} ${bigClass}`;
+    btn.textContent = opt;
+    btn.onclick = ()=>handleAnswer(btn, i, q);
+    box.appendChild(btn);
+  });
+}
+
+function renderPicMCQ(q, card){
+  const optClass = q.type==='pic-mcq-hi' ? 'hindi-opt' : q.type==='pic-mcq-mal' ? 'mal-opt' : '';
+  card.innerHTML = `
+    <div class="question">${q.q}</div>
+    <div class="pic-area"><span class="emoji-big">${q.emoji}</span></div>
+    <div class="options" id="optsBox"></div>
+  `;
+  const box = card.querySelector('#optsBox');
+  q.opts.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className = `opt ${optClass}`;
+    btn.textContent = opt;
+    btn.onclick = ()=>handleAnswer(btn, i, q);
+    box.appendChild(btn);
+  });
+}
+
+function renderSpeak(q, card){
+  card.innerHTML = `
+    <div class="question">${q.q}</div>
+    <div class="pic-area" style="background:linear-gradient(135deg,var(--lilac),var(--pink))">
+      <div class="${q.lang.startsWith('ar')?'arabic-text':q.lang.startsWith('hi')?'hindi-text':''}" style="color:white;font-size:48px;font-weight:700;text-shadow:0 2px 0 rgba(0,0,0,0.2)">${q.text}</div>
+      <div style="color:white;margin-top:10px;font-size:18px;font-style:italic">${q.translit||''}</div>
+    </div>
+    <button class="speak-btn" id="playBtn" style="align-self:center">🔊 Hear it!</button>
+    <button class="done-btn" style="align-self:center;margin-top:10px" id="doneSpeak">I said it! ⭐</button>
+  `;
+  card.querySelector('#playBtn').onclick = ()=>speak(q.text, q.lang);
+  card.querySelector('#doneSpeak').onclick = ()=>{
+    sessionCorrect++;
+    addStar();
+    showFeedback('Great speaking! 🌟', true);
+    setTimeout(nextQuestion, 900);
+  };
+  // auto-play once
+  setTimeout(()=>speak(q.text, q.lang), 400);
+}
+
+function renderFlag(q, card){
+  card.innerHTML = `
+    <div class="question">${q.q}</div>
+    <div style="text-align:center;font-size:14px;color:var(--plum);margin-bottom:8px">Pick the 4 colors of the UAE flag 🇦🇪</div>
+    <div class="flag-grid" id="flagBox"></div>
+    <div style="text-align:center;margin-top:14px"><span id="flagCount" style="font-weight:600">Picked: 0/4</span></div>
+  `;
+  const box = card.querySelector('#flagBox');
+  let picked = [];
+  const colorMap = {Red:'#E63946',Green:'#2A9D5F',White:'#fff',Black:'#222',Yellow:'#F5C518',Blue:'#3FA9F5',Purple:'#A26BD3',Orange:'#F39C2A'};
+  q.all.sort(()=>Math.random()-0.5).forEach(c=>{
+    const el = document.createElement('div');
+    el.className = 'flag-stripe';
+    el.style.background = colorMap[c];
+    el.style.color = (c==='White'||c==='Yellow') ? '#222' : 'white';
+    el.textContent = c;
+    el.onclick = ()=>{
+      if(el.classList.contains('picked')) return;
+      if(q.correct.includes(c)){
+        el.classList.add('picked');
+        el.style.borderColor = '#2e8b57';
+        el.style.boxShadow = 'inset 0 0 0 4px #2e8b57';
+        picked.push(c);
+        document.getElementById('flagCount').textContent = `Picked: ${picked.length}/4`;
+        if(picked.length === 4){
+          sessionCorrect++;
+          addStar();
+          showFeedback('Yes! That\'s the UAE flag! 🇦🇪', true);
+          setTimeout(nextQuestion, 1200);
+        }
+      } else {
+        el.style.opacity = '.4';
+        el.style.borderColor = '#c0392b';
+        showFeedback('That\'s not in the flag — try another!', false);
+      }
+    };
+    box.appendChild(el);
+  });
+}
+
+function renderChoice(q, card){
+  card.innerHTML = `
+    <div class="reflective">
+      <h3>${q.title}</h3>
+      <div class="question" style="font-size:18px">${q.q}</div>
+      <div id="optsBox"></div>
+    </div>
+  `;
+  const box = card.querySelector('#optsBox');
+  q.options.forEach(opt=>{
+    const div = document.createElement('div');
+    div.className = 'options-card';
+    div.style.cursor='pointer';
+    div.innerHTML = `
+      <div style="font-size:48px">${opt.emoji}</div>
+      <h3>${opt.name}</h3>
+      <p>${opt.desc}</p>
+    `;
+    div.onclick = ()=>{
+      sessionCorrect++;
+      addStar();
+      showFeedback(`Awesome choice! Do this with a grown-up at home. ${opt.emoji}`, true);
+      setTimeout(nextQuestion, 1500);
+    };
+    box.appendChild(div);
+  });
+}
+
+function renderReflective(q, card){
+  card.innerHTML = `
+    <div class="reflective">
+      <h3>${q.title}</h3>
+      <div class="options-card">
+        <p style="font-size:18px">${q.text}</p>
+      </div>
+      <button class="done-btn" id="reflDone">I did it! ⭐</button>
+    </div>
+  `;
+  card.querySelector('#reflDone').onclick = ()=>{
+    sessionCorrect++;
+    addStar();
+    showFeedback('Wonderful work! 🌟', true);
+    setTimeout(nextQuestion, 900);
+  };
+}
+
+// ---------- Answer handling ----------
+function handleAnswer(btn, i, q){
+  const correct = q.freeAnswer ? true : (i === q.a);
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+
+  if(correct){
+    btn.classList.add('correct');
+    sessionCorrect++;
+    addStar();
+    showFeedback(pickPhrase('correct'), true);
+    setTimeout(nextQuestion, 900);
+  } else {
+    btn.classList.add('wrong');
+    // highlight correct
+    setTimeout(()=>{
+      document.querySelectorAll('.opt')[q.a]?.classList.add('correct');
+    },300);
+    const hint = q.hint ? ` Hint: ${q.hint}` : '';
+    showFeedback(`Almost! Try again next time.${hint}`, false);
+    setTimeout(nextQuestion, 1800);
+  }
+}
+
+function nextQuestion(){
+  qIndex++;
+  renderQuestion();
+}
+
+function showFeedback(msg, good){
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.style.color = good ? '#2e8b57' : '#c0392b';
+}
+
+function pickPhrase(kind){
+  const good = ['🌟 Brilliant!','🎉 You got it!','💖 Yes!','✨ Star!','🦄 Magical!','🚀 Amazing!','🌈 Wow!'];
+  return good[Math.floor(Math.random()*good.length)];
+}
+
+// ---------- Subject completion ----------
+function finishSubject(){
+  document.getElementById('progressFill').style.width = '100%';
+  const total = QUESTIONS[currentSubject].length;
+  state.subjectStars[currentSubject] = Math.max(state.subjectStars[currentSubject]||0, sessionCorrect);
+  // Trophy
+  const trophyId = `${currentSubject}_complete`;
+  if(!state.trophies.includes(trophyId) && sessionCorrect >= Math.ceil(total*0.6)){
+    state.trophies.push(trophyId);
+  }
+  // Perfect trophy
+  const perfectId = `${currentSubject}_perfect`;
+  if(!state.trophies.includes(perfectId) && sessionCorrect === total){
+    state.trophies.push(perfectId);
+  }
+  saveState();
+
+  const subj = SUBJECTS.find(s=>s.id===currentSubject);
+  const stars = '⭐'.repeat(Math.min(3, Math.ceil((sessionCorrect/total)*3)));
+  showReward(subj.emoji, `${subj.name} done!`, `You got ${sessionCorrect} out of ${total}!`, stars);
+  triggerConfetti();
+}
+
+// ---------- Reward popup ----------
+function showReward(emoji, title, msg, stars){
+  document.getElementById('rewardEmoji').textContent = emoji;
+  document.getElementById('rewardTitle').textContent = title;
+  document.getElementById('rewardMsg').textContent = msg;
+  document.getElementById('rewardStars').textContent = stars;
+  document.getElementById('rewardOverlay').classList.add('show');
+}
+function closeReward(){
+  document.getElementById('rewardOverlay').classList.remove('show');
+  goHome();
+}
+function addStar(){
+  state.stars++;
+  saveState();
+  document.getElementById('totalStars').textContent = state.stars;
+}
+
+// ---------- Confetti ----------
+function triggerConfetti(){
+  const colors = ['#FF9FB8','#FFD86B','#9BD7FF','#A8E6CF','#C7A8F0','#FF7B6B'];
+  for(let i=0;i<60;i++){
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.borderRadius = Math.random()>0.5 ? '50%' : '2px';
+    c.style.transform = `rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(c);
+    const dur = 2 + Math.random()*2;
+    c.animate([
+      {transform:`translateY(0) rotate(0deg)`, opacity:1},
+      {transform:`translateY(110vh) rotate(${720+Math.random()*360}deg)`, opacity:.3}
+    ],{duration:dur*1000, easing:'cubic-bezier(.2,.6,.4,1)'});
+    setTimeout(()=>c.remove(), dur*1000);
+  }
+}
+
+// ---------- Speech ----------
+function speak(text, lang){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang || 'en-US';
+    u.rate = 0.85;
+    u.pitch = 1.05;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+// ---------- Trophies ----------
+const TROPHY_DEFS = [
+  {id:'english_complete', name:'Word Wizard', emoji:'📖'},
+  {id:'english_perfect', name:'Perfect Reader', emoji:'🏅'},
+  {id:'maths_complete', name:'Number Hero', emoji:'🔢'},
+  {id:'maths_perfect', name:'Maths Master', emoji:'🥇'},
+  {id:'arabic_complete', name:'Arabic Star', emoji:'🕌'},
+  {id:'arabic_perfect', name:'Arabic Champ', emoji:'🌙'},
+  {id:'hindi_complete', name:'Hindi Hero', emoji:'🪔'},
+  {id:'hindi_perfect', name:'Hindi Genius', emoji:'🎇'},
+  {id:'french_complete', name:'Bonjour Buddy', emoji:'🥖'},
+  {id:'french_perfect', name:'French Champion', emoji:'🇫🇷'},
+  {id:'malayalam_complete', name:'Malayalam Friend', emoji:'🌴'},
+  {id:'malayalam_perfect', name:'Malayalam Star', emoji:'🥥'},
+  {id:'wau_complete', name:'Nature Explorer', emoji:'🌱'},
+  {id:'wau_perfect', name:'Earth Scientist', emoji:'🔬'},
+  {id:'islamic_complete', name:'Knowledge Seeker', emoji:'🌙'},
+  {id:'islamic_perfect', name:'Faith Star', emoji:'⭐'},
+  {id:'mscs_complete', name:'Family Heart', emoji:'❤️'},
+  {id:'mscs_perfect', name:'Kindness King/Queen', emoji:'👑'},
+  {id:'lifeskills_complete', name:'Polite Pal', emoji:'🤝'},
+  {id:'lifeskills_perfect', name:'Manners Master', emoji:'🎩'},
+];
+
+function showTrophyRoom(){
+  showScreen('trophyRoom');
+  const grid = document.getElementById('trophyGrid');
+  grid.innerHTML = '';
+  TROPHY_DEFS.forEach(t=>{
+    const unlocked = state.trophies.includes(t.id);
+    const div = document.createElement('div');
+    div.className = `trophy ${unlocked?'':'locked'}`;
+    div.innerHTML = `
+      <span class="t-emoji">${unlocked ? t.emoji : '🔒'}</span>
+      <div class="t-name">${unlocked ? t.name : '???'}</div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+// ---------- Navigation ----------
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goHome(){
+  showScreen('home');
+  renderHome();
+}
+
+// ---------- Sparkles bg ----------
+function spawnSparkle(){
+  const s = document.createElement('span');
+  s.textContent = ['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];
+  s.style.left = Math.random()*100+'vw';
+  s.style.animationDuration = (6 + Math.random()*5)+'s';
+  s.style.fontSize = (14 + Math.random()*16)+'px';
+  document.getElementById('sparkles').appendChild(s);
+  setTimeout(()=>s.remove(), 12000);
+}
+setInterval(spawnSparkle, 1200);
+
+// ---------- Init ----------
+renderHome();
+</script>
+</body>
+</html>
